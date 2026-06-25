@@ -10,6 +10,14 @@ type Conversation = {
   timestamp: string;
 };
 
+type CalendarEvent = {
+  id: string;
+  title: string;
+  dateText: string;
+  timeText: string;
+  createdAt: string;
+};
+
 type MemoryData = {
   profile: {
     name: string;
@@ -21,9 +29,25 @@ type MemoryData = {
   projects: string[];
   goals: string[];
   facts: string[];
+  calendar: CalendarEvent[];
   conversations: Conversation[];
 };
+export function addCalendarEvent(input: string): void {
+  const memory = readMemory();
 
+  const cleanedInput = cleanCalendarPhrase(input);
+
+  const event: CalendarEvent = {
+    id: crypto.randomUUID(),
+    title: cleanedInput,
+    dateText: extractDateText(cleanedInput),
+    timeText: extractTimeText(cleanedInput),
+    createdAt: new Date().toISOString()
+  };
+
+  memory.calendar.push(event);
+  saveMemory(memory);
+}
 export function readMemory(): MemoryData {
   const raw = fs.readFileSync(memoryPath, "utf-8");
   return JSON.parse(raw);
@@ -70,6 +94,47 @@ function cleanRememberPhrase(input: string): string {
     .trim();
 }
 
+function cleanGoalPhrase(input: string): string {
+  return input
+    .replace(/^add goal:?\s*/i, "")
+    .replace(/^my goal is\s*/i, "")
+    .replace(/^one of my goals is\s*/i, "")
+    .replace(/^i want to\s*/i, "")
+    .replace(/^my goal is to\s*/i, "")
+    .replace(/\.$/, "")
+    .trim();
+}
+
+function cleanCalendarPhrase(input: string): string {
+  return input
+    .replace(/^add calendar event:?\s*/i, "")
+    .replace(/^add event:?\s*/i, "")
+    .replace(/^schedule:?\s*/i, "")
+    .trim();
+}
+
+function extractDateText(input: string): string {
+  const lower = input.toLowerCase();
+
+  if (lower.includes("today")) return "today";
+  if (lower.includes("tomorrow")) return "tomorrow";
+  if (lower.includes("monday")) return "monday";
+  if (lower.includes("tuesday")) return "tuesday";
+  if (lower.includes("wednesday")) return "wednesday";
+  if (lower.includes("thursday")) return "thursday";
+  if (lower.includes("friday")) return "friday";
+  if (lower.includes("saturday")) return "saturday";
+  if (lower.includes("sunday")) return "sunday";
+
+  return "unscheduled";
+}
+
+function extractTimeText(input: string): string {
+  const timeMatch = input.match(/\b\d{1,2}(:\d{2})?\s?(am|pm|AM|PM)\b/);
+
+  return timeMatch ? timeMatch[0] : "time not set";
+}
+
 function updateStructuredMemory(memory: MemoryData, fact: string): void {
   const lowerFact = fact.toLowerCase();
 
@@ -93,9 +158,16 @@ function updateStructuredMemory(memory: MemoryData, fact: string): void {
     addUnique(memory.projects, fact);
   }
 
-  if (lowerFact.includes("goal") || lowerFact.includes("i want to")) {
-    addUnique(memory.goals, fact);
-  }
+  if (
+  lowerFact.includes("goal is") ||
+  lowerFact.includes("my goal is") ||
+  lowerFact.includes("one of my goals is") ||
+  lowerFact.includes("i want to") ||
+  lowerFact.startsWith("add goal")
+) {
+  const cleanedGoal = cleanGoalPhrase(fact);
+  addUnique(memory.goals, cleanedGoal);
+}
 }
 
 function extractAfterPhrase(input: string, phrase: string): string {
@@ -133,6 +205,14 @@ ${formatList(memory.goals)}
 
 Facts:
 ${formatList(memory.facts)}
+
+Calendar:
+${memory.calendar.length > 0
+  ? memory.calendar
+      .slice(-5)
+      .map((event) => `- ${event.title} (${event.dateText}, ${event.timeText})`)
+      .join("\n")
+  : "- None"}
 
 Recent Conversations:
 ${memory.conversations

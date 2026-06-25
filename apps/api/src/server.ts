@@ -1,8 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { routeAgent, AgentName } from "./router/agentRouter";
-import { addConversation, addFact, readMemory } from "./memory/memoryService";
-
+import { addConversation, addFact, readMemory, addCalendarEvent } from "./memory/memoryService";
 const app = express();
 
 app.use(cors());
@@ -24,6 +23,7 @@ app.get("/memory", (_req, res) => {
     projects: memory.projects,
     goals: memory.goals,
     facts: memory.facts,
+    calendar: memory.calendar,
     conversations: memory.conversations.slice(-20)
   });
 });
@@ -41,6 +41,8 @@ app.post("/chat", async (req, res) => {
       });
     }
 
+
+    
     const selectedAgent: AgentName = agent === "ignis" ? "ignis" : "lois";
     const reply = await routeAgent(selectedAgent, message);
 
@@ -48,12 +50,26 @@ app.post("/chat", async (req, res) => {
     addConversation(selectedAgent, message, reply);
 
     
-    if (
-      message.toLowerCase().startsWith("remember that") ||
-      message.toLowerCase().startsWith("remember:")
-    ) {
-      addFact(message);
-    }
+    const lowerMessage = message.toLowerCase();
+
+if (
+  lowerMessage.startsWith("add calendar event") ||
+  lowerMessage.startsWith("add event") ||
+  lowerMessage.startsWith("schedule:")
+) {
+  addCalendarEvent(message);
+}
+
+if (
+  lowerMessage.startsWith("remember that") ||
+  lowerMessage.startsWith("remember:") ||
+  lowerMessage.startsWith("add goal") ||
+  lowerMessage.includes("my goal is") ||
+  lowerMessage.includes("one of my goals is") ||
+  lowerMessage.includes("i want to")
+) {
+  addFact(message);
+}
 
     res.json({
       agent: selectedAgent,

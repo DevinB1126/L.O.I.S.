@@ -10,6 +10,14 @@ type StoredConversation = {
   timestamp: string;
 };
 
+type CalendarEvent = {
+  id: string;
+  title: string;
+  dateText: string;
+  timeText: string;
+  createdAt: string;
+};
+
 type MemoryData = {
   profile: {
     name: string;
@@ -21,6 +29,7 @@ type MemoryData = {
   projects: string[];
   goals: string[];
   facts: string[];
+  calendar: CalendarEvent[];
 };
 
 type ChatMessage = {
@@ -35,6 +44,16 @@ function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [memory, setMemory] = useState<MemoryData | null>(null);
+  const [voiceState, setVoiceState] = useState<
+  "standby" | "listening" | "thinking" | "speaking"
+>("standby");
+useEffect(() => {
+  window.speechSynthesis.getVoices();
+
+  window.speechSynthesis.onvoiceschanged = () => {
+    window.speechSynthesis.getVoices();
+  };
+}, []);
 
   async function loadMemory() {
     try {
@@ -73,14 +92,15 @@ function App() {
     loadMemory();
   }, []);
 
-  async function sendMessage() {
-    if (!message.trim()) return;
+  async function sendMessage(overrideMessage?: string) {
+    const currentMessage = overrideMessage ?? message;
 
-    const currentMessage = message;
+if (!currentMessage.trim()) return;
 
     setMessages((prev) => [...prev, { role: "user", text: currentMessage }]);
     setMessage("");
     setIsLoading(true);
+    setVoiceState("thinking");
 
     try {
       const response = await fetch("http://localhost:3001/chat", {
@@ -101,6 +121,7 @@ function App() {
       ]);
 
       await loadMemory();
+      speakText(data.reply);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -112,8 +133,101 @@ function App() {
       ]);
     } finally {
       setIsLoading(false);
+if (voiceState !== "speaking") {
+  setVoiceState("standby");
+}
     }
   }
+
+function speakText(text: string) {
+  if (!("speechSynthesis" in window)) {
+    setVoiceState("standby");
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+
+  const voices = window.speechSynthesis.getVoices();
+
+let selectedVoice: SpeechSynthesisVoice | undefined;
+
+if (agent === "lois") {
+  selectedVoice =
+    voices.find((v) => v.name === "Google UK English Female") ||
+    voices.find((v) => v.name === "Martha") ||
+    voices.find((v) => v.name === "Flo (English (United Kingdom))") ||
+    voices.find((v) => v.name === "Samantha");
+} else {
+  selectedVoice =
+    voices.find((v) => v.name === "Daniel (English (United Kingdom))") ||
+    voices.find((v) => v.name === "Google UK English Male") ||
+    voices.find((v) => v.name === "Arthur") ||
+    voices.find((v) => v.name === "Aaron");
+}
+
+if (selectedVoice) {
+  utterance.voice = selectedVoice;
+}
+
+utterance.lang = agent === "lois" ? "en-GB" : "en-GB";
+utterance.rate = agent === "lois" ? 1.10 : 1.00;
+utterance.pitch = agent === "lois" ? 1.22 : 0.82;
+  setVoiceState("speaking");
+
+  utterance.onend = () => {
+    setVoiceState("standby");
+  };
+
+  utterance.onerror = () => {
+    setVoiceState("standby");
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function startVoiceRecognition() {
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Speech Recognition is not supported in this browser.");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  setVoiceState("listening");
+
+  recognition.start();
+
+  recognition.onresult = (event: any) => {
+    const rawTranscript = event.results[0][0].transcript;
+
+const transcript = rawTranscript
+  .replace(/\blouis\b/gi, "LOIS")
+  .replace(/\blewis\b/gi, "LOIS")
+  .replace(/\blois\b/gi, "LOIS")
+  .replace(/\bignis\b/gi, "IGNIS");
+
+setMessage(transcript);
+sendMessage(transcript);
+  };
+
+  recognition.onerror = () => {
+    setVoiceState("standby");
+  };
+
+  recognition.onend = () => {
+    setVoiceState("standby");
+  };
+}
 
   const currentAgentLabel = agent === "lois" ? "LOIS" : "IGNIS";
 
@@ -176,7 +290,7 @@ function App() {
           <div className="orb-ring ring-1" />
           <div className="orb-ring ring-2" />
           <div className="orb-ring ring-3" />
-          <div className="orb-core">
+          <div className={`orb-core ${voiceState}`}>
             <span>{currentAgentLabel}</span>
           </div>
         </section>
@@ -211,13 +325,22 @@ function App() {
         </section>
 
         <section className="voice-strip">
-          <div className="wave">
-            {Array.from({ length: 48 }).map((_, index) => (
-              <span key={index} />
-            ))}
-          </div>
-          <p>{isLoading ? "PROCESSING..." : "VOICE MODULE STANDBY"}</p>
-        </section>
+  <div className="wave">
+    {Array.from({ length: 48 }).map((_, index) => (
+      <span key={index} />
+    ))}
+  </div>
+
+  <p>
+    {voiceState === "standby"
+      ? "VOICE MODULE STANDBY"
+      : voiceState === "listening"
+      ? "LISTENING..."
+      : voiceState === "thinking"
+      ? "PROCESSING..."
+      : "SPEAKING..."}
+  </p>
+</section>
 
         <section className="command-row">
           <button className="keyboard-button">⌨</button>
@@ -232,10 +355,15 @@ function App() {
               }
             }}
           />
-          <button className="send-button" onClick={sendMessage} disabled={isLoading}>
-            SEND
-          </button>
-          <button className="mic-button">🎙</button>
+         <button className="send-button" onClick={() => sendMessage()} disabled={isLoading}>
+  SEND
+</button>
+          <button
+  className={`mic-button ${voiceState}`}
+  onClick={startVoiceRecognition}
+>
+  🎙
+</button>
         </section>
       </section>
 
@@ -279,10 +407,20 @@ function App() {
         </section>
 
         <section className="hud-card schedule-card icon-card">
-          <h2>TODAY'S SCHEDULE <b>□</b></h2>
-          <p>May 23, 2025</p>
-          <p>No events scheduled</p>
-        </section>
+  <h2>SCHEDULE <b>□</b></h2>
+
+  {memory?.calendar && memory.calendar.length > 0 ? (
+    <ul>
+      {memory.calendar.slice(-4).map((event) => (
+        <li key={event.id}>
+          {event.title} — {event.dateText}, {event.timeText}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p>No events scheduled</p>
+  )}
+</section>
       </aside>
 
       <aside className="mini-system-column">

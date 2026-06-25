@@ -840,3 +840,24 @@ body {
     grid-template-columns: 230px minmax(0, 1fr) 310px;
   }
 }
+.orb-core.listening {
+  transform: scale(1.08);
+  box-shadow:
+    0 0 35px var(--accent-glow),
+    0 0 100px var(--accent-glow),
+    inset 0 0 30px white;
+}
+
+.orb-core.speaking {
+  animation: speakingPulse 0.8s infinite alternate;
+}
+
+@keyframes speakingPulse {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.12);
+  }
+}
