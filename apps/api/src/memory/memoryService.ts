@@ -48,6 +48,13 @@ export function addCalendarEvent(input: string): void {
   memory.calendar.push(event);
   saveMemory(memory);
 }
+
+export function clearConversations(): void {
+  const memory = readMemory();
+  memory.conversations = [];
+  saveMemory(memory);
+}
+
 export function readMemory(): MemoryData {
   const raw = fs.readFileSync(memoryPath, "utf-8");
   return JSON.parse(raw);

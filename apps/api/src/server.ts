@@ -1,7 +1,13 @@
 import express from "express";
 import cors from "cors";
 import { routeAgent, AgentName } from "./router/agentRouter";
-import { addConversation, addFact, readMemory, addCalendarEvent } from "./memory/memoryService";
+import {
+  addConversation,
+  addFact,
+  readMemory,
+  addCalendarEvent,
+  clearConversations
+} from "./memory/memoryService";
 const app = express();
 
 app.use(cors());
@@ -25,6 +31,15 @@ app.get("/memory", (_req, res) => {
     facts: memory.facts,
     calendar: memory.calendar,
     conversations: memory.conversations.slice(-20)
+  });
+});
+
+app.delete("/conversations", (_req, res) => {
+  clearConversations();
+
+  res.json({
+    success: true,
+    message: "Conversation history cleared"
   });
 });
 

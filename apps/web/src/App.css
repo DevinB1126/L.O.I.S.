@@ -861,3 +861,45 @@ body {
     transform: scale(1.12);
   }
 }
+.wave.listening span {
+  animation-duration: 0.7s;
+  opacity: 1;
+}
+
+.wave.thinking span {
+  animation-duration: 0.45s;
+  opacity: 0.85;
+}
+
+.wave.speaking span {
+  animation-duration: 0.32s;
+  opacity: 1;
+  box-shadow:
+    0 0 10px var(--accent-glow),
+    0 0 24px var(--accent-glow);
+}
+
+.wave.standby span {
+  animation-duration: 1.4s;
+  opacity: 0.65;
+}
+.top-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.top-actions button {
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  letter-spacing: 0.08rem;
+}
+
+.top-actions button:hover {
+  box-shadow: 0 0 18px var(--accent-soft);
+}

@@ -44,9 +44,46 @@ function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [memory, setMemory] = useState<MemoryData | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [systemTemp, setSystemTemp] = useState(41);
+  const [cpuUsage, setCpuUsage] = useState(18);
+const [ramUsage, setRamUsage] = useState(32);
   const [voiceState, setVoiceState] = useState<
   "standby" | "listening" | "thinking" | "speaking"
 >("standby");
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCurrentTime(new Date());
+  }, 1000);
+  return () => clearInterval(timer);
+}, []);
+
+useEffect(() => {
+  const statsTimer = setInterval(() => {
+    setCpuUsage(Math.floor(Math.random() * 18) + 12);
+    setRamUsage(Math.floor(Math.random() * 20) + 26);
+  }, 4000);
+
+  return () => clearInterval(statsTimer);
+}, []);
+
+useEffect(() => {
+  const tempTimer = setInterval(() => {
+    setSystemTemp((prev) => {
+      const change = Math.random() > 0.5 ? 1 : -1;
+      const next = prev + change;
+
+      if (next < 38) return 38;
+      if (next > 47) return 47;
+
+      return next;
+    });
+  }, 5000);
+
+  return () => clearInterval(tempTimer);
+}, []);
+
 useEffect(() => {
   window.speechSynthesis.getVoices();
 
@@ -138,6 +175,26 @@ if (voiceState !== "speaking") {
 }
     }
   }
+
+function stopSpeaking() {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  setVoiceState("standby");
+}
+
+async function clearVisibleChat() {
+  try {
+    await fetch("http://localhost:3001/conversations", {
+      method: "DELETE",
+    });
+
+    setMessages([]);
+  } catch (error) {
+    console.error("Failed to clear conversation history:", error);
+  }
+}
 
 function speakText(text: string) {
   if (!("speechSynthesis" in window)) {
@@ -231,6 +288,36 @@ sendMessage(transcript);
 
   const currentAgentLabel = agent === "lois" ? "LOIS" : "IGNIS";
 
+  const timeDisplay = currentTime.toLocaleTimeString([], {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+const dateDisplay = currentTime.toLocaleDateString([], {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+
+const hour = currentTime.getHours();
+
+const greeting =
+  hour < 12
+    ? "Good morning, Devin."
+    : hour < 18
+    ? "Good afternoon, Devin."
+    : "Good evening, Devin.";
+
+const voiceLabel =
+  voiceState === "standby"
+    ? "VOICE MODULE STANDBY"
+    : voiceState === "listening"
+    ? "LISTENING..."
+    : voiceState === "thinking"
+    ? "PROCESSING..."
+    : "SPEAKING...";
+
   return (
     <main className={`hud ${agent}`}>
       <div className="deep-space" />
@@ -268,21 +355,26 @@ sendMessage(transcript);
         <section className="local-card">
           <h2>LOCAL SYSTEM</h2>
           <strong>ONLINE</strong>
-          <p>Uptime: 02:14:37</p>
-          <p>Power: 100%</p>
-          <p>Temperature: 41°C</p>
+         <p>Time: {timeDisplay}</p>
+          <p>Date: {dateDisplay}</p>
+         <p>Temperature: {systemTemp}°C</p>
           <div className="mini-eq" />
         </section>
       </aside>
 
       <section className="center-stage">
         <header className="top-status">
-          <span>CORE STATUS: ACTIVE</span>
-          <select value={agent} onChange={(e) => setAgent(e.target.value as Agent)}>
-            <option value="lois">LOIS</option>
-            <option value="ignis">IGNIS</option>
-          </select>
-        </header>
+  <span>CORE STATUS: ACTIVE</span>
+
+  <div className="top-actions">
+    <button onClick={clearVisibleChat}>CLEAR CHAT</button>
+
+    <select value={agent} onChange={(e) => setAgent(e.target.value as Agent)}>
+      <option value="lois">LOIS</option>
+      <option value="ignis">IGNIS</option>
+    </select>
+  </div>
+</header>
 
         <section className="orb-zone">
           <div className="crosshair horizontal" />
@@ -298,7 +390,7 @@ sendMessage(transcript);
         <section className="conversation-panel">
           {messages.length === 0 ? (
             <div className="welcome">
-              <h2>Good evening, Devin.</h2>
+              <h2>{greeting}</h2>
               <p>{currentAgentLabel} core is online. How may I assist?</p>
             </div>
           ) : (
@@ -325,7 +417,7 @@ sendMessage(transcript);
         </section>
 
         <section className="voice-strip">
-  <div className="wave">
+  <div className={`wave ${voiceState}`}>
     {Array.from({ length: 48 }).map((_, index) => (
       <span key={index} />
     ))}
@@ -360,9 +452,9 @@ sendMessage(transcript);
 </button>
           <button
   className={`mic-button ${voiceState}`}
-  onClick={startVoiceRecognition}
+  onClick={voiceState === "speaking" ? stopSpeaking : startVoiceRecognition}
 >
-  🎙
+  {voiceState === "speaking" ? "■" : "🎙"}
 </button>
         </section>
       </section>
@@ -373,7 +465,7 @@ sendMessage(transcript);
           <p><span /> {currentAgentLabel} Core: Online</p>
           <p><span /> Memory: Active</p>
           <p><span /> Local Model: Connected</p>
-          <p><span /> Voice: Standby</p>
+          <p>{voiceLabel}</p>
         </section>
 
         <section className="hud-card icon-card">
@@ -425,21 +517,21 @@ sendMessage(transcript);
 
       <aside className="mini-system-column">
         <section className="time-widget">
-          <strong>11:47 PM</strong>
-          <p>May 23, 2025</p>
+          <strong>{timeDisplay}</strong>
+<p>{dateDisplay}</p>
         </section>
 
         <section className="meter-card">
           <div className="circle-meter">
             <span>CPU</span>
-            <strong>18%</strong>
+            <strong>{cpuUsage}%</strong>
           </div>
         </section>
 
         <section className="meter-card">
           <div className="circle-meter ram">
             <span>RAM</span>
-            <strong>32%</strong>
+            <strong>{ramUsage}%</strong>
           </div>
         </section>
 
