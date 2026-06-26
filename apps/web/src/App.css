@@ -618,7 +618,7 @@ body {
   min-height: auto;
 }
 
-.hud-card span {
+.hud-card p > span {
   display: inline-block;
   width: 9px;
   height: 9px;
@@ -902,4 +902,57 @@ body {
 
 .top-actions button:hover {
   box-shadow: 0 0 18px var(--accent-soft);
+}
+.goal-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.goal-item > span {
+  flex: 1;
+  width: auto;
+  height: auto;
+  display: block;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  margin-right: 0;
+  color: var(--text);
+}
+
+.goal-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.goal-actions button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-border);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.goal-actions button:hover {
+  box-shadow: 0 0 12px var(--accent-soft);
+}
+@media (max-width: 1550px) {
+  .mini-system-column {
+    display: none;
+  }
+
+  .weather-card {
+    display: none;
+  }
+}
+@media (max-width: 1800px) {
+  .mini-system-column,
+  .weather-card {
+    display: none !important;
+  }
 }

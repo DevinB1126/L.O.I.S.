@@ -10,6 +10,13 @@ type StoredConversation = {
   timestamp: string;
 };
 
+type Goal = {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+};
+
 type CalendarEvent = {
   id: string;
   title: string;
@@ -25,9 +32,12 @@ type MemoryData = {
     location: string;
     occupation: string;
   };
+
   preferences: string[];
   projects: string[];
-  goals: string[];
+
+  goals: Goal[];
+
   facts: string[];
   calendar: CalendarEvent[];
 };
@@ -101,6 +111,30 @@ useEffect(() => {
       console.error("Failed to load memory:", error);
     }
   }
+
+async function completeGoal(goalId: string) {
+  try {
+    await fetch(`http://localhost:3001/goals/${goalId}/complete`, {
+      method: "PATCH",
+    });
+
+    await loadMemory();
+  } catch (error) {
+    console.error("Failed to complete goal:", error);
+  }
+}
+
+async function deleteGoal(goalId: string) {
+  try {
+    await fetch(`http://localhost:3001/goals/${goalId}`, {
+      method: "DELETE",
+    });
+
+    await loadMemory();
+  } catch (error) {
+    console.error("Failed to delete goal:", error);
+  }
+}
 
   async function loadConversationHistory() {
     try {
@@ -480,21 +514,22 @@ const voiceLabel =
           <h2>CURRENT GOALS <b>◎</b></h2>
           <ul>
             {memory?.goals && memory.goals.length > 0 ? (
-              memory.goals.slice(0, 4).map((goal, index) => <li key={index}>{goal}</li>)
-            ) : (
-              <li>No goals stored yet</li>
-            )}
-          </ul>
-        </section>
+  memory.goals
+    .filter((goal) => !goal.completed)
+    .slice(0, 4)
+    .map((goal) => (
+      <li key={goal.id} className="goal-item">
+        <span>{goal.title || "Untitled goal"}</span>
 
-        <section className="hud-card icon-card">
-          <h2>RECENT MEMORY <b>◌</b></h2>
-          <ul>
-            {memory?.facts && memory.facts.length > 0 ? (
-              memory.facts.slice(-4).map((fact, index) => <li key={index}>{fact}</li>)
-            ) : (
-              <li>No facts stored yet</li>
-            )}
+        <div className="goal-actions">
+          <button onClick={() => completeGoal(goal.id)}>✓</button>
+          <button onClick={() => deleteGoal(goal.id)}>×</button>
+        </div>
+      </li>
+    ))
+) : (
+  <li>No goals stored yet</li>
+)}
           </ul>
         </section>
 

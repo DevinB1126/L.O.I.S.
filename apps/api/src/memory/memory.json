@@ -8,9 +8,19 @@
   "preferences": [],
   "projects": [],
   "goals": [
-    "one of my goals is to build LOIS into a real personal AI assistant.",
-    "finish LOIS v1 with voice, goals, and calendar"
-  ],
+  {
+    "id": "goal-1",
+    "title": "finish LOIS v1 with voice, goals, and calendar",
+    "completed": false,
+    "createdAt": "2026-06-24T00:00:00.000Z"
+  },
+  {
+  "id": "goal-2",
+  "title": "another goal",
+  "completed": false,
+  "createdAt": "2026-06-24T00:00:00.000Z"
+}
+],
   "facts": [
     "my favorite color is black.",
     "I live in Dallas.",

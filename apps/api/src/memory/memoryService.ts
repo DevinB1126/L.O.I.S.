@@ -18,6 +18,13 @@ type CalendarEvent = {
   createdAt: string;
 };
 
+type Goal = {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+};
+
 type MemoryData = {
   profile: {
     name: string;
@@ -27,7 +34,7 @@ type MemoryData = {
   };
   preferences: string[];
   projects: string[];
-  goals: string[];
+  goals: Goal[];
   facts: string[];
   calendar: CalendarEvent[];
   conversations: Conversation[];
@@ -136,6 +143,44 @@ function extractDateText(input: string): string {
   return "unscheduled";
 }
 
+function addGoal(memory: MemoryData, title: string): void {
+  const exists = memory.goals.some(
+    (goal) => goal.title.toLowerCase() === title.toLowerCase()
+  );
+
+  if (exists) return;
+
+  memory.goals.push({
+    id: crypto.randomUUID(),
+    title,
+    completed: false,
+    createdAt: new Date().toISOString()
+  });
+}
+
+export function completeGoal(goalId: string): boolean {
+  const memory = readMemory();
+  const goal = memory.goals.find((item) => item.id === goalId);
+
+  if (!goal) return false;
+
+  goal.completed = true;
+  saveMemory(memory);
+
+  return true;
+}
+
+export function deleteGoal(goalId: string): boolean {
+  const memory = readMemory();
+  const originalLength = memory.goals.length;
+
+  memory.goals = memory.goals.filter((goal) => goal.id !== goalId);
+
+  saveMemory(memory);
+
+  return memory.goals.length !== originalLength;
+}
+
 function extractTimeText(input: string): string {
   const timeMatch = input.match(/\b\d{1,2}(:\d{2})?\s?(am|pm|AM|PM)\b/);
 
@@ -173,7 +218,7 @@ function updateStructuredMemory(memory: MemoryData, fact: string): void {
   lowerFact.startsWith("add goal")
 ) {
   const cleanedGoal = cleanGoalPhrase(fact);
-  addUnique(memory.goals, cleanedGoal);
+  addGoal(memory, cleanedGoal);
 }
 }
 
@@ -208,7 +253,11 @@ Projects:
 ${formatList(memory.projects)}
 
 Goals:
-${formatList(memory.goals)}
+${memory.goals.length > 0
+  ? memory.goals
+      .map((goal) => `- ${goal.completed ? "[Complete]" : "[Active]"} ${goal.title}`)
+      .join("\n")
+  : "- None"}
 
 Facts:
 ${formatList(memory.facts)}

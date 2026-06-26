@@ -6,7 +6,9 @@ import {
   addFact,
   readMemory,
   addCalendarEvent,
-  clearConversations
+  clearConversations,
+  completeGoal,
+  deleteGoal
 } from "./memory/memoryService";
 const app = express();
 
@@ -17,6 +19,34 @@ app.get("/health", (_req, res) => {
   res.json({
     status: "LOIS online",
     version: "0.1.0-alpha"
+  });
+});
+
+app.patch("/goals/:id/complete", (req, res) => {
+  const success = completeGoal(req.params.id);
+
+  if (!success) {
+    return res.status(404).json({
+      error: "Goal not found"
+    });
+  }
+
+  res.json({
+    success: true
+  });
+});
+
+app.delete("/goals/:id", (req, res) => {
+  const success = deleteGoal(req.params.id);
+
+  if (!success) {
+    return res.status(404).json({
+      error: "Goal not found"
+    });
+  }
+
+  res.json({
+    success: true
   });
 });
 
