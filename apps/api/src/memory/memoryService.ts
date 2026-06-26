@@ -67,6 +67,19 @@ export function deleteCalendarEvent(eventId: string): boolean {
   return memory.calendar.length !== originalLength;
 }
 
+export function deleteFact(index: number): boolean {
+  const memory = readMemory();
+
+  if (index < 0 || index >= memory.facts.length) {
+    return false;
+  }
+
+  memory.facts.splice(index, 1);
+  saveMemory(memory);
+
+  return true;
+}
+
 export function clearConversations(): void {
   const memory = readMemory();
   memory.conversations = [];

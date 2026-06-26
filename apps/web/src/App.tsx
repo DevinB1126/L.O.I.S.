@@ -112,6 +112,18 @@ useEffect(() => {
     }
   }
 
+async function deleteMemoryFact(index: number) {
+  try {
+    await fetch(`http://localhost:3001/facts/${index}`, {
+      method: "DELETE",
+    });
+
+    await loadMemory();
+  } catch (error) {
+    console.error("Failed to delete memory fact:", error);
+  }
+}
+
 async function deleteCalendarEvent(eventId: string) {
   try {
     await fetch(`http://localhost:3001/calendar/${eventId}`, {
@@ -513,7 +525,26 @@ const voiceLabel =
           <p><span /> Local Model: Connected</p>
           <p>{voiceLabel}</p>
         </section>
+<section className="hud-card icon-card">
+  <h2>RECENT MEMORY <b>◌</b></h2>
 
+  <ul className="memory-fact-list">
+    {memory?.facts && memory.facts.length > 0 ? (
+      memory.facts.slice(-4).map((fact, index) => {
+        const originalIndex = memory.facts.length - 4 + index;
+
+        return (
+          <li key={originalIndex} className="memory-fact-item">
+            <span>{fact}</span>
+            <button onClick={() => deleteMemoryFact(originalIndex)}>×</button>
+          </li>
+        );
+      })
+    ) : (
+      <li>No facts stored yet</li>
+    )}
+  </ul>
+</section>
         <section className="hud-card icon-card">
           <h2>MEMORY SNAPSHOT <b>♙</b></h2>
           <p>Name: {memory?.profile.name || "Unknown"}</p>
@@ -566,6 +597,8 @@ const voiceLabel =
   )}
 </section>
       </aside>
+
+
 
       <aside className="mini-system-column">
         <section className="time-widget">
