@@ -116,7 +116,11 @@ export function addFact(fact: string): void {
   const memory = readMemory();
   const cleanedFact = cleanRememberPhrase(fact);
 
-  if (!memory.facts.includes(cleanedFact)) {
+  const alreadyExists = memory.facts.some(
+    (existingFact) => existingFact.toLowerCase() === cleanedFact.toLowerCase()
+  );
+
+  if (!alreadyExists && cleanedFact.length > 0) {
     memory.facts.push(cleanedFact);
   }
 
@@ -129,7 +133,11 @@ function cleanRememberPhrase(input: string): string {
   return input
     .replace(/^remember that\s+/i, "")
     .replace(/^remember:\s*/i, "")
-    .trim();
+    .replace(/^please remember that\s+/i, "")
+    .replace(/^lois,?\s+remember that\s+/i, "")
+    .replace(/^lois,?\s+remember:\s*/i, "")
+    .trim()
+    .replace(/\.$/, "");
 }
 
 function cleanGoalPhrase(input: string): string {

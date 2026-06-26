@@ -1029,3 +1029,8 @@ body {
 .memory-fact-item button:hover {
   box-shadow: 0 0 12px var(--accent-soft);
 }
+.memory-fact-item span {
+  max-height: 42px;
+  overflow: hidden;
+  line-height: 1.35;
+}
