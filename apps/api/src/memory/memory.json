@@ -8,33 +8,38 @@
   "preferences": [],
   "projects": [],
   "goals": [
-  {
-    "id": "goal-1",
-    "title": "finish LOIS v1 with voice, goals, and calendar",
-    "completed": false,
-    "createdAt": "2026-06-24T00:00:00.000Z"
-  },
-  {
-  "id": "goal-2",
-  "title": "another goal",
-  "completed": false,
-  "createdAt": "2026-06-24T00:00:00.000Z"
-}
-],
+    {
+      "id": "goal-1",
+      "title": "finish LOIS v1 with voice, goals, and calendar",
+      "completed": false,
+      "createdAt": "2026-06-24T00:00:00.000Z"
+    },
+    {
+      "id": "goal-2",
+      "title": "another goal",
+      "completed": false,
+      "createdAt": "2026-06-24T00:00:00.000Z"
+    }
+  ],
   "facts": [
     "my favorite color is black.",
     "I live in Dallas.",
     "one of my goals is to build LOIS into a real personal AI assistant.",
     "Add goal: finish LOIS v1 with voice, goals, and calendar."
   ],
-  "calendar": [
+  "calendar": [],
+  "conversations": [
     {
-      "id": "db3e115d-d7e2-49d7-afe2-352f4d3fef07",
-      "title": "Gym tomorrow at 6 AM",
-      "dateText": "tomorrow",
-      "timeText": "6 AM",
-      "createdAt": "2026-06-25T01:37:23.046Z"
+      "agent": "lois",
+      "userMessage": "LOIS what's the weather for tomorrow Rosenberg Texas",
+      "assistantReply": "Devin, I've checked the weather forecast for you. Tomorrow in Rosenberg, Texas, it's expected to be mostly cloudy with a high of 73°F and a low of 58°F. There's a slight chance of scattered showers throughout the day.\n\nWould you like me to add this information to your calendar or provide any further assistance?",
+      "timestamp": "2026-06-26T02:39:36.926Z"
+    },
+    {
+      "agent": "lois",
+      "userMessage": "all right I'm just going to be patient",
+      "assistantReply": "Devin, I've been monitoring your conversation history, and it seems you're having a bit of a waiting game with the latest developments. Would you like me to provide an update on LOIS's status? I can offer some insights on our progress and highlight any potential timelines for completion.",
+      "timestamp": "2026-06-26T02:39:55.162Z"
     }
-  ],
-  "conversations": []
+  ]
 }

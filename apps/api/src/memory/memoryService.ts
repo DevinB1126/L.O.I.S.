@@ -56,6 +56,17 @@ export function addCalendarEvent(input: string): void {
   saveMemory(memory);
 }
 
+export function deleteCalendarEvent(eventId: string): boolean {
+  const memory = readMemory();
+  const originalLength = memory.calendar.length;
+
+  memory.calendar = memory.calendar.filter((event) => event.id !== eventId);
+
+  saveMemory(memory);
+
+  return memory.calendar.length !== originalLength;
+}
+
 export function clearConversations(): void {
   const memory = readMemory();
   memory.conversations = [];

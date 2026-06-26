@@ -8,7 +8,8 @@ import {
   addCalendarEvent,
   clearConversations,
   completeGoal,
-  deleteGoal
+  deleteGoal,
+  deleteCalendarEvent
 } from "./memory/memoryService";
 const app = express();
 
@@ -70,6 +71,20 @@ app.delete("/conversations", (_req, res) => {
   res.json({
     success: true,
     message: "Conversation history cleared"
+  });
+});
+
+app.delete("/calendar/:id", (req, res) => {
+  const success = deleteCalendarEvent(req.params.id);
+
+  if (!success) {
+    return res.status(404).json({
+      error: "Calendar event not found"
+    });
+  }
+
+  res.json({
+    success: true
   });
 });
 

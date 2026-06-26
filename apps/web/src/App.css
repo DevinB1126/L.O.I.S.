@@ -956,3 +956,43 @@ body {
     display: none !important;
   }
 }
+.schedule-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.schedule-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+
+.schedule-item strong {
+  display: block;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.schedule-item p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.schedule-item button {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-border);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.schedule-item button:hover {
+  box-shadow: 0 0 12px var(--accent-soft);
+}

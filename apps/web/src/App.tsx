@@ -112,6 +112,18 @@ useEffect(() => {
     }
   }
 
+async function deleteCalendarEvent(eventId: string) {
+  try {
+    await fetch(`http://localhost:3001/calendar/${eventId}`, {
+      method: "DELETE",
+    });
+
+    await loadMemory();
+  } catch (error) {
+    console.error("Failed to delete calendar event:", error);
+  }
+}
+
 async function completeGoal(goalId: string) {
   try {
     await fetch(`http://localhost:3001/goals/${goalId}/complete`, {
@@ -537,10 +549,15 @@ const voiceLabel =
   <h2>SCHEDULE <b>□</b></h2>
 
   {memory?.calendar && memory.calendar.length > 0 ? (
-    <ul>
+    <ul className="schedule-list">
       {memory.calendar.slice(-4).map((event) => (
-        <li key={event.id}>
-          {event.title} — {event.dateText}, {event.timeText}
+        <li key={event.id} className="schedule-item">
+          <div>
+            <strong>{event.title}</strong>
+            <p>{event.dateText} • {event.timeText}</p>
+          </div>
+
+          <button onClick={() => deleteCalendarEvent(event.id)}>×</button>
         </li>
       ))}
     </ul>
