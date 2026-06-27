@@ -1605,3 +1605,145 @@ transform:scale(1.04);
     opacity: 1;
   }
 }
+.right-panels {
+  gap: 10px;
+}
+
+.hud-card {
+  padding: 13px 16px;
+}
+
+.hud-card h2 {
+  margin-bottom: 10px;
+  font-size: 0.88rem;
+}
+
+.hud-card p,
+.hud-card li {
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.memory-fact-list,
+.schedule-list {
+  max-height: 145px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.memory-fact-list::-webkit-scrollbar,
+.schedule-list::-webkit-scrollbar,
+.conversation-panel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.memory-fact-list::-webkit-scrollbar-thumb,
+.schedule-list::-webkit-scrollbar-thumb,
+.conversation-panel::-webkit-scrollbar-thumb {
+  background: var(--accent-border);
+  border-radius: 999px;
+}
+
+.conversation-panel {
+  height: 155px;
+}
+
+.hud-message {
+  padding: 10px 12px;
+}
+
+.local-card {
+  width: 275px;
+}
+
+.center-stage {
+  border-radius: 28px;
+}
+
+.command-row {
+  margin-top: 4px;
+}
+
+@media (max-height: 850px) {
+  .brand {
+    margin-bottom: 28px;
+  }
+
+  .hud-nav {
+    gap: 10px;
+  }
+
+  .hud-nav button {
+    padding: 13px 18px;
+  }
+
+  .local-card {
+    padding: 14px;
+  }
+
+  .orb-zone {
+    height: 330px;
+  }
+
+  .conversation-panel {
+    height: 135px;
+  }
+}
+.conversation-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hud-message {
+  max-height: 92px;
+  overflow-y: auto;
+}
+
+.hud-message::-webkit-scrollbar {
+  width: 4px;
+}
+
+.hud-message::-webkit-scrollbar-thumb {
+  background: var(--accent-border);
+  border-radius: 999px;
+}
+.top-status span::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+  animation: statusPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.brand h1 {
+  animation: brandGlow 4s ease-in-out infinite;
+}
+
+@keyframes brandGlow {
+  0%, 100% {
+    text-shadow: 0 0 18px var(--accent-glow);
+  }
+
+  50% {
+    text-shadow:
+      0 0 24px var(--accent-glow),
+      0 0 42px var(--accent-soft);
+  }
+}
