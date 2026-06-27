@@ -3,6 +3,8 @@ import "./App.css";
 
 type Agent = "lois" | "ignis";
 
+type HudView = "chat" | "memory" | "goals" | "calendar" | "voice";
+
 type StoredConversation = {
   agent: Agent;
   userMessage: string;
@@ -58,6 +60,7 @@ function App() {
   const [systemTemp, setSystemTemp] = useState(41);
   const [cpuUsage, setCpuUsage] = useState(18);
 const [ramUsage, setRamUsage] = useState(32);
+const [activeView, setActiveView] = useState<HudView>("chat");
   const [voiceState, setVoiceState] = useState<
   "standby" | "listening" | "thinking" | "speaking"
 >("standby");
@@ -409,12 +412,41 @@ const voiceLabel =
         </div>
 
         <nav className="hud-nav">
-          <button className="active">▣ Chat</button>
-          <button>◌ Memory</button>
-          <button>◎ Goals</button>
-          <button>□ Calendar</button>
-          <button>◍ Voice</button>
-        </nav>
+  <button
+    className={activeView === "chat" ? "active" : ""}
+    onClick={() => setActiveView("chat")}
+  >
+    ▣ Chat
+  </button>
+
+  <button
+    className={activeView === "memory" ? "active" : ""}
+    onClick={() => setActiveView("memory")}
+  >
+    ◌ Memory
+  </button>
+
+  <button
+    className={activeView === "goals" ? "active" : ""}
+    onClick={() => setActiveView("goals")}
+  >
+    ◎ Goals
+  </button>
+
+  <button
+    className={activeView === "calendar" ? "active" : ""}
+    onClick={() => setActiveView("calendar")}
+  >
+    □ Calendar
+  </button>
+
+  <button
+    className={activeView === "voice" ? "active" : ""}
+    onClick={() => setActiveView("voice")}
+  >
+    ◍ Voice
+  </button>
+</nav>
 
         <section className="local-card">
           <h2>LOCAL SYSTEM</h2>
@@ -428,6 +460,9 @@ const voiceLabel =
 
       <section className="center-stage">
         <header className="top-status">
+        <div className="view-chip">
+  VIEW: {activeView.toUpperCase()}
+</div>
   <span>CORE STATUS: ACTIVE</span>
 
   <div className="top-actions">
@@ -475,33 +510,132 @@ const voiceLabel =
 </section>
 
         <section className="conversation-panel">
-          {messages.length === 0 ? (
-            <div className="welcome">
-              <h2>{greeting}</h2>
-              <p>{currentAgentLabel} core is online. How may I assist?</p>
-            </div>
-          ) : (
-            messages.slice(-6).map((msg, index) => (
-              <div key={index} className={`hud-message ${msg.role}`}>
-                <strong>
-                  {msg.role === "user"
-                    ? "DEVIN"
-                    : msg.agent === "ignis"
-                    ? "IGNIS"
-                    : "LOIS"}
-                </strong>
-                <p>{msg.text}</p>
-              </div>
-            ))
-          )}
+  {activeView === "memory" ? (
+    
+    <div className="focus-view">
+      <h2>Memory Database</h2>
 
-          {isLoading && (
-            <div className="hud-message assistant">
-              <strong>{currentAgentLabel}</strong>
-              <p>Processing request...</p>
+      <div className="focus-grid">
+        <div>
+          <h3>Profile</h3>
+          <p>Name: {memory?.profile.name || "Unknown"}</p>
+          <p>Location: {memory?.profile.location || "Unknown"}</p>
+          <p>Favorite Color: {memory?.profile.favoriteColor || "Unknown"}</p>
+          <p>Occupation: {memory?.profile.occupation || "Unknown"}</p>
+        </div>
+
+        <div>
+          <h3>Stored Facts</h3>
+          <ul>
+            {memory?.facts && memory.facts.length > 0 ? (
+              memory.facts.slice(-6).map((fact, index) => (
+                <li key={index}>{fact}</li>
+              ))
+            ) : (
+              <li>No stored facts</li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  )
+   : activeView === "goals" ? (
+  <div className="focus-view">
+    <h2>Goals Matrix</h2>
+
+    <ul className="focus-list">
+      {memory?.goals && memory.goals.length > 0 ? (
+        memory.goals.map((goal) => (
+          <li key={goal.id}>
+            <span>{goal.completed ? "✓" : "○"}</span>
+            <div>
+              <strong>{goal.title}</strong>
+              <p>{goal.completed ? "Completed" : "Active"}</p>
             </div>
-          )}
-        </section>
+          </li>
+        ))
+      ) : (
+        <li>No goals stored</li>
+      )}
+    </ul>
+  </div>
+  )
+   : activeView === "calendar" ? (
+  <div className="focus-view">
+    <h2>Calendar Matrix</h2>
+
+    <ul className="focus-list">
+      {memory?.calendar && memory.calendar.length > 0 ? (
+        memory.calendar.map((event) => (
+          <li key={event.id}>
+            <span>□</span>
+            <div>
+              <strong>{event.title}</strong>
+              <p>{event.dateText} • {event.timeText}</p>
+            </div>
+          </li>
+        ))
+      ) : (
+        <li>No calendar events stored</li>
+      )}
+    </ul>
+  </div>
+  )
+   : activeView === "voice" ? (
+  <div className="focus-view">
+    <h2>Voice Interface</h2>
+
+    <div className="voice-focus">
+      <div className={`voice-orb ${voiceState}`}>
+        {voiceState === "standby"
+          ? "STANDBY"
+          : voiceState === "listening"
+          ? "LISTENING"
+          : voiceState === "thinking"
+          ? "PROCESSING"
+          : "SPEAKING"}
+      </div>
+
+      <div>
+        <p>Current Voice State: {voiceLabel}</p>
+        <p>Speech Recognition: Enabled</p>
+        <p>Speech Output: Enabled</p>
+        <p>Active Voice: {agent === "lois" ? "British Female" : "British Male"}</p>
+      </div>
+    </div>
+  </div>
+  )
+  : (
+    <>
+      {messages.length === 0 ? (
+        <div className="welcome">
+          <h2>{greeting}</h2>
+          <p>{currentAgentLabel} core is online. How may I assist?</p>
+        </div>
+      ) : (
+        messages.slice(-6).map((msg, index) => (
+          <div key={index} className={`hud-message ${msg.role}`}>
+            <strong>
+              {msg.role === "user"
+                ? "DEVIN"
+                : msg.agent === "ignis"
+                ? "IGNIS"
+                : "LOIS"}
+            </strong>
+            <p>{msg.text}</p>
+          </div>
+        ))
+      )}
+
+      {isLoading && (
+        <div className="hud-message assistant">
+          <strong>{currentAgentLabel}</strong>
+          <p>Processing request...</p>
+        </div>
+      )}
+    </>
+  )}
+</section>
 
         <section className="voice-strip">
   <div className={`wave ${voiceState}`}>

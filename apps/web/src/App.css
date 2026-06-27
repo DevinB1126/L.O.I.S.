@@ -1747,3 +1747,115 @@ transform:scale(1.04);
       0 0 42px var(--accent-soft);
   }
 }
+.view-chip {
+  position: absolute;
+  top: 88px;
+  left: 28px;
+  z-index: 6;
+  padding: 7px 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  color: var(--accent);
+  background: rgba(0, 10, 18, 0.75);
+  font-size: 0.7rem;
+  letter-spacing: 0.12rem;
+  box-shadow: 0 0 16px var(--accent-soft);
+}
+
+.focus-view h2 {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-size: 1rem;
+  letter-spacing: 0.12rem;
+}
+
+.focus-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.focus-grid div {
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(0, 10, 18, 0.55);
+}
+
+.focus-grid h3 {
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.focus-grid p,
+.focus-grid li {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.focus-grid ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.focus-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.focus-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: rgba(0, 10, 18, 0.55);
+}
+
+.focus-list li > span {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.focus-list strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.focus-list p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.voice-focus {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.voice-orb {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-size: 0.75rem;
+  letter-spacing: 0.12rem;
+  border: 1px solid var(--accent-border);
+  background: radial-gradient(circle, var(--accent-soft), rgba(0, 0, 0, 0.85));
+  box-shadow: 0 0 34px var(--accent-soft);
+}
+
+.voice-orb.listening,
+.voice-orb.thinking,
+.voice-orb.speaking {
+  box-shadow:
+    0 0 34px var(--accent-glow),
+    0 0 80px var(--accent-soft);
+}
