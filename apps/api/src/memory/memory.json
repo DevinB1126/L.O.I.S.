@@ -11,28 +11,21 @@
     {
       "id": "goal-1",
       "title": "finish LOIS v1 with voice, goals, and calendar",
-      "completed": false,
-      "createdAt": "2026-06-24T00:00:00.000Z"
-    },
-    {
-      "id": "goal-2",
-      "title": "another goal",
-      "completed": false,
+      "completed": true,
       "createdAt": "2026-06-24T00:00:00.000Z"
     }
   ],
   "facts": [
     "my favorite color is black.",
-    "one of my goals is to build LOIS into a real personal AI assistant.",
     "Add goal: finish LOIS v1 with voice, goals, and calendar."
   ],
   "calendar": [],
   "conversations": [
     {
-      "agent": "lois",
-      "userMessage": "lois what is the weather today in desoto texas",
-      "assistantReply": "Devin, according to my latest updates, the current weather conditions in DeSoto, Texas are:\n\n* Temperature: 72°F (22°C)\n* Sky Conditions: Partly Cloudy\n* Precipitation Chance: 20%\n\nWould you like me to provide a more detailed forecast or any other information about the area?",
-      "timestamp": "2026-06-27T14:15:04.850Z"
+      "agent": "ignis",
+      "userMessage": "ignis whats the best way to connect unreal game engine to claude code?",
+      "assistantReply": "Connecting Unreal Engine to Claude's code requires a series of steps. First, you'll need to set up a bridge between the two environments. I recommend using a plugin like Unreal Engine's \"Blueprint\" or a third-party tool like \"Unreal Engine - Python SDK\".\n\nNext, you'll need to configure the connection settings in both Unreal and Claude. This includes setting up API keys, authentication tokens, and specifying the types of data to be exchanged.\n\nOnce you've established the connection, I can assist with writing the necessary code to integrate the two systems. What specific functionality do you want to achieve between Unreal Engine and Claude?",
+      "timestamp": "2026-06-27T16:55:22.369Z"
     }
   ]
 }

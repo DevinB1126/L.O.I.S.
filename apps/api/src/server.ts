@@ -128,22 +128,36 @@ app.post("/chat", async (req, res) => {
     
     const lowerMessage = message.toLowerCase();
 
-if (
+const shouldSaveCalendarEvent =
   lowerMessage.startsWith("add calendar event") ||
   lowerMessage.startsWith("add event") ||
-  lowerMessage.startsWith("schedule:")
-) {
+  lowerMessage.startsWith("schedule:") ||
+  lowerMessage.startsWith("schedule ") ||
+  lowerMessage.includes("add to my calendar") ||
+  lowerMessage.includes("put on my calendar") ||
+  lowerMessage.includes("add a birthday") ||
+  lowerMessage.includes("birthday on") ||
+  lowerMessage.includes("birthday is");
+
+if (shouldSaveCalendarEvent) {
   addCalendarEvent(message);
 }
 
-if (
+const shouldSaveFact =
   lowerMessage.startsWith("remember that") ||
   lowerMessage.startsWith("remember:") ||
-  lowerMessage.startsWith("add goal") ||
+  lowerMessage.startsWith("add to my facts") ||
+  lowerMessage.startsWith("add fact") ||
+  lowerMessage.includes("my favorite") ||
+  lowerMessage.includes("i prefer") ||
+  lowerMessage.includes("i live in") ||
+  lowerMessage.includes("my birthday") ||
+  lowerMessage.includes("my favorite superhero") ||
   lowerMessage.includes("my goal is") ||
   lowerMessage.includes("one of my goals is") ||
-  lowerMessage.includes("i want to")
-) {
+  lowerMessage.includes("i want to");
+
+if (shouldSaveFact) {
   addFact(message);
 }
 

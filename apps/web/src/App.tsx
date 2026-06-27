@@ -397,7 +397,12 @@ const voiceLabel =
     <span key={index} />
   ))}
 </div>
-
+<div className="holo-world-layer">
+  <div className="world-node node-a" />
+  <div className="world-node node-b" />
+  <div className="world-node node-c" />
+  <div className="world-node node-d" />
+</div>
       <div className="scanlines" />
 
       <aside className="left-rail">
@@ -477,6 +482,8 @@ const voiceLabel =
 
         <section className="orb-zone">
 
+
+
     <div className="star-field" />
 
     <div className="orbit orbit-1" />
@@ -485,11 +492,13 @@ const voiceLabel =
     <div className="orbit orbit-4" />
 
     <div className="orb-status-chip left-chip">
-  {voiceState === "listening" ? "LISTENING" : "CORE LINK"}
+  <strong>CORE LINK</strong>
+  <span>Latency: 22 ms</span>
 </div>
 
 <div className="orb-status-chip right-chip">
-  {voiceLabel}
+  <strong>VOICE</strong>
+  <span>{voiceState.toUpperCase()}</span>
 </div>
 
     <div className="satellite satellite-1" />
@@ -502,6 +511,16 @@ const voiceLabel =
     <div className="orb-ring ring-1" />
     <div className="orb-ring ring-2" />
     <div className="orb-ring ring-3" />
+
+    <div className="core-halo halo-1" />
+<div className="core-halo halo-2" />
+<div className="core-halo halo-3" />
+
+<div className="core-segment-ring">
+  {Array.from({ length: 32 }).map((_, index) => (
+    <span key={index} />
+  ))}
+</div>
 
     <div className={`orb-core ${voiceState}`}>
         <span>{currentAgentLabel}</span>
@@ -678,6 +697,22 @@ const voiceLabel =
   {voiceState === "speaking" ? "■" : "🎙"}
 </button>
         </section>
+        <div className="telemetry-dock">
+  <div className="telemetry-pill">
+    <span>CPU</span>
+    <strong>{cpuUsage}%</strong>
+  </div>
+
+  <div className="telemetry-pill">
+    <span>RAM</span>
+    <strong>{ramUsage}%</strong>
+  </div>
+
+  <div className="telemetry-pill wide">
+    <span>NET</span>
+    <strong>1.2 KB/s</strong>
+  </div>
+</div>
       </section>
 
       <aside className="right-panels">
@@ -686,28 +721,9 @@ const voiceLabel =
           <p><span /> {currentAgentLabel} Core: Online</p>
           <p><span /> Memory: Active</p>
           <p><span /> Local Model: Connected</p>
-          <p>{voiceLabel}</p>
+          <p>Voice: {voiceState.toUpperCase()}</p>
         </section>
-<section className="hud-card icon-card">
-  <h2>RECENT MEMORY <b>◌</b></h2>
 
-  <ul className="memory-fact-list">
-    {memory?.facts && memory.facts.length > 0 ? (
-      memory.facts.slice(-4).map((fact, index) => {
-        const originalIndex = memory.facts.length - 4 + index;
-
-        return (
-          <li key={originalIndex} className="memory-fact-item">
-            <span>{fact}</span>
-            <button onClick={() => deleteMemoryFact(originalIndex)}>×</button>
-          </li>
-        );
-      })
-    ) : (
-      <li>No facts stored yet</li>
-    )}
-  </ul>
-</section>
         <section className="hud-card icon-card">
           <h2>MEMORY SNAPSHOT <b>♙</b></h2>
           <p>Name: {memory?.profile.name || "Unknown"}</p>
@@ -758,6 +774,27 @@ const voiceLabel =
   ) : (
     <p>No events scheduled</p>
   )}
+</section>
+
+<section className="hud-card icon-card">
+  <h2>RECENT MEMORY <b>◌</b></h2>
+
+  <ul className="memory-fact-list">
+    {memory?.facts && memory.facts.length > 0 ? (
+      memory.facts.slice(-4).map((fact, index) => {
+        const originalIndex = memory.facts.length - 4 + index;
+
+        return (
+          <li key={originalIndex} className="memory-fact-item">
+            <span>{fact}</span>
+            <button onClick={() => deleteMemoryFact(originalIndex)}>×</button>
+          </li>
+        );
+      })
+    ) : (
+      <li>No facts stored yet</li>
+    )}
+  </ul>
 </section>
       </aside>
 
