@@ -377,7 +377,7 @@ const voiceLabel =
     : "SPEAKING...";
 
   return (
-    <main className={`hud ${agent}`}>
+    <main className={`hud ${agent} state-${voiceState}`}>
       <div className="deep-space" />
       <div className="background-grid" />
       <div className="data-map" />
@@ -389,6 +389,12 @@ const voiceLabel =
       <div className="data-stream" />
       <div className="world-map" />
       <div className="right-holo-column" />
+      <div className="particle-field">
+  {Array.from({ length: 36 }).map((_, index) => (
+    <span key={index} />
+  ))}
+</div>
+
       <div className="scanlines" />
 
       <aside className="left-rail">
@@ -435,15 +441,38 @@ const voiceLabel =
 </header>
 
         <section className="orb-zone">
-          <div className="crosshair horizontal" />
-          <div className="crosshair vertical" />
-          <div className="orb-ring ring-1" />
-          <div className="orb-ring ring-2" />
-          <div className="orb-ring ring-3" />
-          <div className={`orb-core ${voiceState}`}>
-            <span>{currentAgentLabel}</span>
-          </div>
-        </section>
+
+    <div className="star-field" />
+
+    <div className="orbit orbit-1" />
+    <div className="orbit orbit-2" />
+    <div className="orbit orbit-3" />
+    <div className="orbit orbit-4" />
+
+    <div className="orb-status-chip left-chip">
+  {voiceState === "listening" ? "LISTENING" : "CORE LINK"}
+</div>
+
+<div className="orb-status-chip right-chip">
+  {voiceLabel}
+</div>
+
+    <div className="satellite satellite-1" />
+    <div className="satellite satellite-2" />
+    <div className="satellite satellite-3" />
+
+    <div className="crosshair horizontal" />
+    <div className="crosshair vertical" />
+
+    <div className="orb-ring ring-1" />
+    <div className="orb-ring ring-2" />
+    <div className="orb-ring ring-3" />
+
+    <div className={`orb-core ${voiceState}`}>
+        <span>{currentAgentLabel}</span>
+    </div>
+
+</section>
 
         <section className="conversation-panel">
           {messages.length === 0 ? (
