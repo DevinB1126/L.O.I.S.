@@ -12,6 +12,7 @@ import {
   deleteCalendarEvent,
   deleteFact
 } from "./memory/memoryService";
+import { streamOllamaResponse } from "./providers/ollamaProvider";
 const app = express();
 
 app.use(cors());
@@ -102,6 +103,39 @@ app.delete("/facts/:index", (req, res) => {
   res.json({
     success: true
   });
+});
+
+app.post("/chat/stream", async (req, res) => {
+  try {
+    const { agent, message } = req.body as {
+      agent?: AgentName;
+      message?: string;
+    };
+
+    if (!message) {
+      return res.status(400).json({
+        error: "Message is required",
+      });
+    }
+
+    const selectedAgent: AgentName = agent === "ignis" ? "ignis" : "lois";
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Transfer-Encoding", "chunked");
+
+    let fullReply = "";
+
+    fullReply = await streamOllamaResponse(message, (chunk) => {
+      res.write(chunk);
+    });
+
+    addConversation(selectedAgent, message, fullReply);
+
+    res.end();
+  } catch (error) {
+    console.error("Stream chat error:", error);
+    res.status(500).end("LOIS encountered a streaming error");
+  }
 });
 
 app.post("/chat", async (req, res) => {

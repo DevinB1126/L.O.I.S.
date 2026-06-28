@@ -201,25 +201,49 @@ if (!currentMessage.trim()) return;
     setVoiceState("thinking");
 
     try {
-      const response = await fetch("http://localhost:3001/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agent, message: currentMessage }),
-      });
+      const response = await fetch("http://localhost:3001/chat/stream", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ agent, message: currentMessage }),
+});
 
-      const data = await response.json();
+if (!response.body) {
+  throw new Error("No streaming response body");
+}
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          agent: data.agent,
-          text: data.reply,
-        },
-      ]);
+const assistantMessage: ChatMessage = {
+  role: "assistant",
+  agent,
+  text: "",
+};
 
-      await loadMemory();
-      speakText(data.reply);
+setMessages((prev) => [...prev, assistantMessage]);
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+let fullReply = "";
+
+while (true) {
+  const { done, value } = await reader.read();
+
+  if (done) break;
+
+  const chunk = decoder.decode(value);
+  fullReply += chunk;
+
+  setMessages((prev) => {
+    const updated = [...prev];
+    updated[updated.length - 1] = {
+      ...updated[updated.length - 1],
+      text: fullReply,
+    };
+    return updated;
+  });
+}
+
+await loadMemory();
+speakText(fullReply);
     } catch {
       setMessages((prev) => [
         ...prev,
