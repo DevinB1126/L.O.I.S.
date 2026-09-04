@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "../services/api";
-import type { Agent, ChatMessage, VoiceState } from "../types";
+import type { Agent, ChatMessage, MemoryData, VoiceState } from "../types";
 
 // Groups chat state together with the actions that mutate it, so
 // consumers (App.tsx, ConversationPanel, Composer) take one cohesive
@@ -26,7 +26,7 @@ export interface UseChatOptions {
   voiceState: VoiceState;
   setVoiceState: (state: VoiceState) => void;
   speak: (text: string) => void;
-  refreshMemory: () => Promise<void>;
+  refreshMemory: () => Promise<MemoryData | null>;
 }
 
 // Owns chat message state, submission, streaming response handling, chat
@@ -143,8 +143,58 @@ export function useChat({
           return;
         }
 
-        await refreshMemory();
-        speak(fullReply);
+        // Action Execution Layer v1 — when the backend actually executed a
+        // calendar/goal/memory action for this message, the real
+        // (grounded) confirmation text is followed by this marker plus a
+        // JSON summary (see ACTION_RESULT_MARKER's own comment in api.ts).
+        // Strip it before displaying/speaking — the visible text is
+        // everything before the marker, exactly the grounded confirmation
+        // the backend built from the real ActionResult, never LLM prose.
+        const actionMarkerIndex = fullReply.indexOf(api.ACTION_RESULT_MARKER);
+        const visibleReply = actionMarkerIndex !== -1 ? fullReply.slice(0, actionMarkerIndex).trimEnd() : fullReply;
+
+        let actionSummary: api.StreamedActionSummary | null = null;
+
+        if (actionMarkerIndex !== -1) {
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...updated[updated.length - 1], text: visibleReply };
+            return updated;
+          });
+
+          try {
+            actionSummary = JSON.parse(fullReply.slice(actionMarkerIndex + api.ACTION_RESULT_MARKER.length).trim());
+          } catch {
+            // Malformed marker payload — treat as "no structured summary"
+            // rather than breaking the whole turn over it; the visible
+            // reply above is already correct either way.
+          }
+        }
+
+        // Action Execution Layer v2 (Objective 9) — refresh only when
+        // there is real reason to believe something changed: either this
+        // wasn't an action turn at all (normal chat — refreshMemory() is
+        // cheap, a single GET, and this preserves the existing behavior of
+        // keeping the snapshot current), or it WAS an action and it
+        // actually succeeded. A failed action changed nothing, so
+        // refetching after one is a wasted round-trip, not a correctness
+        // issue — but the whole point of this fix is not doing pointless
+        // work on faith, so it's skipped.
+        if (!actionSummary || actionSummary.success) {
+          if (actionSummary) {
+            console.log(`[chat] ${actionSummary.domain} state changed`);
+            console.log(`[frontend] refreshing ${actionSummary.domain}`);
+          }
+
+          const refreshed = await refreshMemory();
+
+          if (actionSummary?.domain === "goals" && refreshed) {
+            const activeCount = refreshed.goals.filter((goal) => !goal.completed).length;
+            console.log(`[frontend] received ${activeCount} active goal(s)`);
+          }
+        }
+
+        speak(visibleReply);
       } catch (error) {
         setMessages((prev) => [
           ...prev,

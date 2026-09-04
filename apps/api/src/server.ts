@@ -7,7 +7,6 @@ import {
   addConversation,
   addMemory,
   readMemory,
-  addCalendarEvent,
   clearConversations,
   completeGoal,
   deleteGoal,
@@ -22,6 +21,10 @@ import {
 import { OllamaRequestError } from "./providers/ollamaProvider";
 import { processUserMessageForMemory } from "./memory/memoryPipeline";
 import { tryHandleProfileUpdate } from "./memory/profileUpdatePipeline";
+import { extractAssistantAction } from "./actions/actionExtractor";
+import { executeAssistantAction } from "./actions/actionExecutor";
+import type { ActionResult } from "./actions/assistantAction";
+import { actionDomain } from "./actions/assistantAction";
 import { embedMemoryAsync, backfillMemoryEmbeddings } from "./memory/memoryEmbeddings";
 import {
   initDocumentStorage,
@@ -79,6 +82,28 @@ const documentUpload = multer({
 // text as a successful reply (see STREAM_ERROR_MARKER in
 // apps/web/src/services/api.ts — the two must match exactly).
 const STREAM_ERROR_MARKER = " LOIS_STREAM_ERROR ";
+
+// Action Execution Layer v1 (Step 11) — same out-of-band-marker technique
+// as STREAM_ERROR_MARKER above, for the same structural reason: /chat/stream
+// commits to a plain-text body the instant it starts writing, so there is
+// no header/JSON envelope left to carry structured data once streaming has
+// begun. A JSON-encoded action summary is appended as the final chunk
+// (never for a normal chat turn with no action — only when one actually
+// ran), and the frontend strips it before displaying the reply, exactly as
+// it already does for STREAM_ERROR_MARKER (see ACTION_RESULT_MARKER in
+// apps/web/src/services/api.ts — the two must match exactly).
+const ACTION_RESULT_MARKER = " LOIS_ACTION_RESULT ";
+
+// Action Execution Layer v1 (Step 9) — the ONLY function allowed to turn an
+// ActionResult into reply text. Every branch copies the result's own
+// message/error verbatim; nothing here is generated or guessed. This is
+// what "the assistant response is downstream of the real action result"
+// means in code, not just in principle.
+function buildActionReply(result: ActionResult): string {
+  if (result.success) return result.message;
+  if (result.status === "needs_clarification") return result.message;
+  return `I couldn't do that: ${result.error}`;
+}
 
 app.use(cors());
 app.use(express.json());
@@ -764,6 +789,55 @@ app.post("/chat/stream", async (req, res) => {
     return;
   }
 
+  // Action Execution Layer v1 — checked after the profile-update path
+  // above and before any LLM generation. If the message is a recognized,
+  // supported action (calendar/goal/memory), it is executed for real here
+  // and the reply is built entirely from the real ActionResult (Step 9) —
+  // the model is never asked to narrate what "probably" happened. This
+  // SKIPS streamAgentResponse (no LLM call for this message, same posture
+  // as the profile-update path) and returns before reaching the
+  // fire-and-forget processUserMessageForMemory call further below: an
+  // explicit action command is already fully handled here, so running the
+  // automatic-extraction/explicit-command pipeline again afterward would
+  // be redundant work its own dedup would just no-op on.
+  const assistantAction = extractAssistantAction(message, { profileName: readMemory().profile.name || undefined });
+
+  if (assistantAction) {
+    // Objective 19 — one line per lifecycle stage, so a failure's exact
+    // location is visible from the logs alone rather than having to
+    // instrument ad hoc every time this gets debugged again.
+    console.log(`[action.detected] ${assistantAction.type}`);
+    console.log(`[action.executing] ${assistantAction.type}`);
+
+    const actionResult = await executeAssistantAction(assistantAction, { projectId: targetProjectId });
+    const reply = buildActionReply(actionResult);
+    const domain = actionDomain(assistantAction.type);
+
+    res.write(reply);
+    res.write(`${ACTION_RESULT_MARKER}${JSON.stringify({ type: assistantAction.type, success: actionResult.success, domain })}`);
+    persistTurn(message, reply);
+    res.end();
+
+    console.log(
+      `[action.${actionResult.success ? "success" : "failed"}] ${assistantAction.type}${
+        actionResult.success ? "" : ` status=${actionResult.status}`
+      }`
+    );
+    if (actionResult.success) {
+      console.log(`[chat] ${domain} state changed`);
+    }
+
+    console.log(
+      formatPerfLine("[action]", {
+        agent: selectedAgent,
+        type: assistantAction.type,
+        status: actionResult.success ? "success" : actionResult.status,
+      })
+    );
+    console.log(formatPerfLine("[perf]", { agent: selectedAgent, path: "action", total: `${timer.elapsedTotal()}ms` }));
+    return;
+  }
+
   try {
     const fullReply = await streamAgentResponse(
       selectedAgent,
@@ -916,38 +990,71 @@ app.post("/chat", async (req, res) => {
       });
     }
 
+    // Action Execution Layer v1 — same posture and ordering as /chat/stream
+    // (see that route's own comment for the full rationale). This is also
+    // where the OLD ad-hoc calendar heuristic used to live — a fixed list
+    // of startsWith/includes phrases feeding a raw string into
+    // addCalendarEvent(), which could not represent a real date like
+    // "March 20" or any recurrence at all, and which this route was the
+    // ONLY place that ever ran (the frontend's actual chat path,
+    // /chat/stream, never had any calendar-handling code at all — the
+    // concrete root cause of the reported "LOIS talks about it but nothing
+    // happens" bug). That block is removed; both routes now share one
+    // action pipeline instead of route-specific hacks.
+    const assistantAction = extractAssistantAction(message, { profileName: readMemory().profile.name || undefined });
+
+    if (assistantAction) {
+      console.log(`[action.detected] ${assistantAction.type}`);
+      console.log(`[action.executing] ${assistantAction.type}`);
+
+      const actionResult = await executeAssistantAction(assistantAction, { projectId: targetProjectId });
+      const reply = buildActionReply(actionResult);
+      const domain = actionDomain(assistantAction.type);
+
+      persistTurn(message, reply);
+
+      console.log(
+        `[action.${actionResult.success ? "success" : "failed"}] ${assistantAction.type}${
+          actionResult.success ? "" : ` status=${actionResult.status}`
+        }`
+      );
+      if (actionResult.success) {
+        console.log(`[chat] ${domain} state changed`);
+      }
+
+      console.log(
+        formatPerfLine("[action]", {
+          agent: selectedAgent,
+          type: assistantAction.type,
+          status: actionResult.success ? "success" : actionResult.status,
+        })
+      );
+
+      return res.json({
+        agent: selectedAgent,
+        reply,
+        actions: [{ type: assistantAction.type, success: actionResult.success, domain }],
+      });
+    }
+
     const reply = await routeAgent(selectedAgent, message, conversationId, timer);
 
     persistTurn(message, reply);
     timer.mark("conversationPersistence");
 
-    const lowerMessage = message.toLowerCase();
-
-const shouldSaveCalendarEvent =
-  lowerMessage.startsWith("add calendar event") ||
-  lowerMessage.startsWith("add event") ||
-  lowerMessage.startsWith("schedule:") ||
-  lowerMessage.startsWith("schedule ") ||
-  lowerMessage.includes("add to my calendar") ||
-  lowerMessage.includes("put on my calendar") ||
-  lowerMessage.includes("add a birthday") ||
-  lowerMessage.includes("birthday on") ||
-  lowerMessage.includes("birthday is");
-
-if (shouldSaveCalendarEvent) {
-  addCalendarEvent(message);
-}
-
-// Memory v2B: explicit "remember that..."/"save this..." commands are
-// handled first and are authoritative; anything else runs through
-// intelligent extraction (category/importance/confidence, duplicate
-// detection, sensitive-content guard). Not awaited for the same reason as
-// in /chat/stream — it operates on `message`, not `reply`, and a failure
-// here can never affect this response either way. Projects v1A: scoped to
-// the active conversation's project, if any.
-processUserMessageForMemory(message, { projectId: targetProjectId }).catch((error) => {
-  console.error("[memory] pipeline failed for non-streamed chat:", error);
-});
+    // Memory v2B: explicit "remember that..."/"save this..." commands are
+    // handled first and are authoritative; anything else runs through
+    // intelligent extraction (category/importance/confidence, duplicate
+    // detection, sensitive-content guard). Not awaited for the same reason
+    // as in /chat/stream — it operates on `message`, not `reply`, and a
+    // failure here can never affect this response either way. Projects
+    // v1A: scoped to the active conversation's project, if any. (Only
+    // reached when the message was NOT already handled as an action above
+    // — an explicit command is fully handled there, so this automatic
+    // pipeline is for everything else, unchanged from before.)
+    processUserMessageForMemory(message, { projectId: targetProjectId }).catch((error) => {
+      console.error("[memory] pipeline failed for non-streamed chat:", error);
+    });
 
     res.json({
       agent: selectedAgent,

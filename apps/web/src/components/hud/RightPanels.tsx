@@ -1,5 +1,6 @@
 import type { VoiceState } from "../../types";
 import type { MemoryController } from "../../hooks/useMemory";
+import { recurrenceLabel } from "../../utils/calendar";
 
 interface RightPanelsProps {
   currentAgentLabel: string;
@@ -77,18 +78,23 @@ export function RightPanels({ currentAgentLabel, voiceState, memory }: RightPane
 
         {data?.calendar && data.calendar.length > 0 ? (
           <ul className="schedule-list">
-            {data.calendar.slice(-4).map((event) => (
-              <li key={event.id} className="schedule-item">
-                <div>
-                  <strong>{event.title}</strong>
-                  <p>
-                    {event.dateText} • {event.timeText}
-                  </p>
-                </div>
+            {data.calendar.slice(-4).map((event) => {
+              const repeats = recurrenceLabel(event.recurrence);
 
-                <button onClick={() => memory.deleteCalendarEvent(event.id)}>×</button>
-              </li>
-            ))}
+              return (
+                <li key={event.id} className="schedule-item">
+                  <div>
+                    <strong>{event.title}</strong>
+                    <p>
+                      {event.dateText} • {event.timeText}
+                      {repeats ? ` • ${repeats}` : ""}
+                    </p>
+                  </div>
+
+                  <button onClick={() => memory.deleteCalendarEvent(event.id)}>×</button>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p>No events scheduled</p>

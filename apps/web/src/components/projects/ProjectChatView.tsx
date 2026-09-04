@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Agent, Project } from "../../types";
 import type { VoiceController } from "../../hooks/useVoice";
+import type { MemoryController } from "../../hooks/useMemory";
 import { useChat } from "../../hooks/useChat";
-import { useMemory } from "../../hooks/useMemory";
 import { createMicClickHandler } from "../../hooks/useVoice";
 import { ChatTranscript } from "../chat/ChatTranscript";
 import { Composer } from "../chat/Composer";
@@ -17,6 +17,18 @@ interface ProjectChatViewProps {
   voice: VoiceController;
   voiceLabel: string;
   onBack: () => void;
+  /** Action Execution Layer v2 (Objective 11) — the SAME app-root
+   *  MemoryController RightPanels/GoalsView/CalendarView already read from
+   *  (threaded down via ConversationPanel -> ProjectsRoot), not a second
+   *  independent instance. This used to call its own useMemory() here
+   *  purely to have *something* to refresh after sending — which meant an
+   *  action (e.g. goals.replace) fired from inside a project chat updated
+   *  a local state nobody rendered, while the real Goals Matrix/Current
+   *  Goals sidebar (driven by the app-root instance) never learned
+   *  anything had changed. Sharing the one instance is what makes "both
+   *  update after a mutation" (Objective 11's own requirement) true by
+   *  construction instead of by coincidence. */
+  memory: MemoryController;
 }
 
 // Objective 25/B17 — a project chat uses the SAME chat interface as the
@@ -32,16 +44,9 @@ export function ProjectChatView({
   voice,
   voiceLabel,
   onBack,
+  memory,
 }: ProjectChatViewProps) {
   const [chatTitle, setChatTitle] = useState<string>("");
-
-  // A lightweight, local memory refresh: the top-level useMemory instance
-  // already exists at the App root for the Memory Snapshot panel, but this
-  // component doesn't have access to it — a project chat still wants to
-  // trigger *a* refresh after sending (matching the global chat's own
-  // post-send behavior), so it gets its own minimal instance rather than
-  // threading the app-root one all the way down through three components.
-  const memory = useMemory();
 
   const chat = useChat({
     agent,

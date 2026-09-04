@@ -104,6 +104,25 @@ export async function clearConversationMessages(conversationId: string): Promise
 // Must match STREAM_ERROR_MARKER in apps/api/src/server.ts exactly.
 export const STREAM_ERROR_MARKER = " LOIS_STREAM_ERROR ";
 
+// Action Execution Layer v1 — same out-of-band-marker technique as
+// STREAM_ERROR_MARKER above. When the backend actually executed a
+// calendar/goal/memory action for this message, it appends this marker
+// plus a JSON summary ({ type, success }) as the final chunk, after the
+// real (grounded) confirmation text. Consumers strip everything from this
+// marker onward before displaying the reply.
+//
+// Must match ACTION_RESULT_MARKER in apps/api/src/server.ts exactly.
+export const ACTION_RESULT_MARKER = " LOIS_ACTION_RESULT ";
+
+// `domain` says which slice of state changed (must match ActionDomain in
+// apps/api/src/actions/assistantAction.ts) — Objective 8: the frontend
+// must never infer this by parsing the reply text itself.
+export interface StreamedActionSummary {
+  type: string;
+  success: boolean;
+  domain: "calendar" | "goals" | "memory";
+}
+
 // Opens the streaming chat response and hands back the raw reader, exactly
 // as App.tsx used to consume it inline. The streaming protocol itself is
 // intentionally left untouched here (hardening is a separate v1.1 task) —

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Agent } from "../../types";
 import type { VoiceController } from "../../hooks/useVoice";
+import type { MemoryController } from "../../hooks/useMemory";
 import { useProjects } from "../../hooks/useProjects";
 import { ProjectsListView } from "./ProjectsListView";
 import { ProjectWorkspaceView } from "./ProjectWorkspaceView";
@@ -11,6 +12,10 @@ interface ProjectsRootProps {
   currentAgentLabel: string;
   voice: VoiceController;
   voiceLabel: string;
+  /** Action Execution Layer v2 (Objective 11) — passed straight through to
+   *  ProjectChatView; see that component's own comment for why this must
+   *  be the app-root instance, not a locally-created one. */
+  memory: MemoryController;
 }
 
 // Projects v1A — the top-level state machine for the "Projects" HudView:
@@ -19,7 +24,7 @@ interface ProjectsRootProps {
 // the ONLY thing that changes which project/chat is "active" — nothing
 // here caches stale scope across a switch, since each child component
 // re-fetches from the backend keyed on the id it's currently given.
-export function ProjectsRoot({ agent, currentAgentLabel, voice, voiceLabel }: ProjectsRootProps) {
+export function ProjectsRoot({ agent, currentAgentLabel, voice, voiceLabel, memory }: ProjectsRootProps) {
   const projects = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -58,6 +63,7 @@ export function ProjectsRoot({ agent, currentAgentLabel, voice, voiceLabel }: Pr
         voice={voice}
         voiceLabel={voiceLabel}
         onBack={backToWorkspace}
+        memory={memory}
       />
     );
   }

@@ -43,7 +43,23 @@ export type Project = {
 
 const MAX_NAME_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 500;
-const MAX_INSTRUCTIONS_LENGTH = 4000;
+// Raised from 4000 — a real user project (a full game-design/lore bible for
+// a multi-system project) needed roughly 25-30k characters and was being
+// hard-rejected (updateProject returns "invalid_instructions", surfaced to
+// the user as "Invalid instructions") rather than silently truncated the
+// way createProject's own initial-instructions path already was. 40000
+// gives headroom for that kind of document to grow further while staying
+// comfortably under express.json()'s default 100kb body-size limit.
+//
+// Tradeoff, by user's explicit choice over trimming the document: this
+// entire block gets re-injected into EVERY chat prompt sent to LOIS/IGNIS
+// inside that project (see agentPrompt.ts's buildProjectSection), and this
+// app's own Performance Pass v1 measured that prompt size directly drives
+// response latency on CPU-only Ollama inference — a project using anywhere
+// near this full limit will see noticeably slower responses than a project
+// with short instructions. This is a deliberate per-project cost the user
+// accepted, not an oversight.
+const MAX_INSTRUCTIONS_LENGTH = 40000;
 const MAX_CONTEXT_SUMMARY_LENGTH = 4000;
 
 const DEFAULT_DATA_DIR = path.join(__dirname, "..", "..", "data", "projects");
