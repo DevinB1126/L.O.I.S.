@@ -2,3 +2,28 @@ node_modules/
 dist/
 .env
 .DS_Store
+
+# Documents v1A — user-uploaded files and their extracted text are
+# application data, not source, and can be large/sensitive. The index
+# (document metadata) is regenerable from nothing (a fresh empty index is
+# valid startup state, same as memory.json's own migration-on-missing
+# behavior) so it's excluded too, rather than half-committing metadata for
+# files that themselves were never committed. Directory structure survives
+# a fresh clone via the .gitkeep files, which these rules deliberately
+# un-ignore.
+apps/api/data/documents/files/*
+apps/api/data/documents/extracted/*
+apps/api/data/documents/index.json
+!apps/api/data/documents/files/.gitkeep
+!apps/api/data/documents/extracted/.gitkeep
+
+# Projects v1A — same rationale as Documents v1A above: project and
+# conversation records are user data (project instructions/summaries, full
+# chat transcripts), not source, and each index is regenerable from
+# nothing (a fresh empty index — or, for conversations, a migration from
+# memory.json — is valid startup state). Directory structure survives a
+# fresh clone via the .gitkeep files below.
+apps/api/data/projects/index.json
+apps/api/data/conversations/index.json
+!apps/api/data/projects/.gitkeep
+!apps/api/data/conversations/.gitkeep

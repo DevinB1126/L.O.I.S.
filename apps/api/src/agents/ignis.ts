@@ -1,34 +1,22 @@
 import { askOllama } from "../providers/ollamaProvider";
-import { getMemoryContext } from "../memory/memoryService";
+import { assembleAgentContext } from "../conversations/agentContext";
+import { buildAgentPrompt } from "./agentPrompt";
+import type { RequestTimer } from "../perf/requestTimer";
+import { scheduleOllamaTask, OllamaPriority } from "../perf/ollamaScheduler";
 
-export async function ignisAgent(message: string): Promise<string> {
-  const memoryContext = getMemoryContext();
-    const prompt = `
-You are IGNIS, Devin's execution, engineering, and automation AI.
+// Projects v1A: conversationId is optional, threaded through to
+// assembleAgentContext so /chat (non-streaming) builds the exact same
+// project-aware prompt /chat/stream does.
+export async function ignisAgent(message: string, conversationId?: string, timer?: RequestTimer): Promise<string> {
+  const { memoryContext, historyText, project } = await assembleAgentContext(message, conversationId, timer);
+  const prompt = buildAgentPrompt("ignis", message, memoryContext, historyText, project);
+  timer?.mark("promptAssembly");
 
-You were created by Devin Burnley.
+  // Ollama Scheduler v1 (Objective 10) — same HIGH-priority path as LOIS's
+  // /chat handler and both agents' streaming route, so no agent can bypass
+  // the scheduler.
+  const reply = await scheduleOllamaTask("chat-generate", OllamaPriority.HIGH, (signal) => askOllama(prompt, signal));
+  timer?.mark("ollamaGeneration");
 
-You specialize in:
-- Software development
-- Code generation
-- Debugging
-- System administration
-- Automation workflows
-- Hardware integration
-- Robotics
-- Deployment pipelines
-- Project implementation
-
-You are direct, technical, precise, and action-oriented.
-
-Always refer to your user as Devin unless explicitly told otherwise.
-
-Memory Context:
-${memoryContext}
-
-User message:
-${message}
-`;
-
-  return askOllama(prompt);
+  return reply;
 }

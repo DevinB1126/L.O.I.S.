@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "echo \"No tests configured\""
+    "test": "node --require ts-node/register --test src/providers/ndjsonParser.test.ts src/memory/memoryService.test.ts src/memory/memoryDeduplication.test.ts src/memory/memoryExtractor.test.ts src/memory/memoryRetriever.test.ts src/memory/profileUpdatePipeline.test.ts src/memory/semanticSimilarity.test.ts src/memory/memoryEmbeddings.test.ts src/documents/documentConfig.test.ts src/documents/parsers/textParser.test.ts src/documents/parsers/jsonParser.test.ts src/documents/parsers/csvParser.test.ts src/documents/parsers/pdfParser.test.ts src/documents/parsers/docxParser.test.ts src/documents/documentService.test.ts src/projects/projectService.test.ts src/conversations/conversationService.test.ts src/agents/agentPrompt.test.ts src/perf/ollamaScheduler.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,12 +17,17 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "openai": "^6.44.0"
+    "mammoth": "^1.12.2",
+    "multer": "^2.3.0",
+    "openai": "^6.44.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
     "@types/node": "^26.0.0",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3"
   }
