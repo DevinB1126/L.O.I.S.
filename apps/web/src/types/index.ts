@@ -24,12 +24,28 @@ export type Goal = {
   createdAt: string;
 };
 
+// Action Execution Layer v1 — must match CalendarRecurrence in
+// apps/api/src/actions/assistantAction.ts.
+export type CalendarRecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
+
+export type CalendarRecurrence = {
+  frequency: CalendarRecurrenceFrequency;
+  interval: number;
+};
+
+// Must match CalendarEvent in apps/api/src/memory/memoryService.ts.
+// `date`/`recurrence` are optional — absent on any event created before
+// this change (no migration was needed on the backend, so none is needed
+// here either; the UI just shows those exactly as before).
 export type CalendarEvent = {
   id: string;
   title: string;
   dateText: string;
   timeText: string;
+  date?: string;
+  recurrence?: CalendarRecurrence;
   createdAt: string;
+  updatedAt: string;
 };
 
 // Deliberately conservative — this is the foundation later Memory v2 stages

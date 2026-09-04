@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { retrieveRelevantMemories, formatRetrievedMemories, RETRIEVAL_CONFIG } from "./memoryRetriever";
+import type { CalendarRecurrence } from "../actions/assistantAction";
+import { formatDateText } from "../actions/calendarRecurrence";
 
 const DEFAULT_MEMORY_PATH = path.join(__dirname, "memory.json");
 
@@ -19,12 +21,27 @@ type Conversation = {
   timestamp: string;
 };
 
-type CalendarEvent = {
+// Action Execution Layer v1 — exported (was module-private) so the action
+// executor/frontend types can reference it directly instead of duplicating
+// the shape. `date`/`recurrence` are new; `dateText`/`timeText` are kept as
+// display strings for the existing UI (CalendarView, RightPanels' SCHEDULE
+// card) rather than ripped out, but are now DERIVED from `date`/`recurrence`
+// at creation time (see addCalendarEvent) instead of guessed from raw text.
+// Both new fields are optional so a pre-existing event created before this
+// change (no `date`, no `recurrence`) stays a valid record — no migration
+// needed, same purely-additive posture every other optional field on this
+// file's records already uses (see MemoryRecord.embedding's own comment).
+export type CalendarEvent = {
   id: string;
   title: string;
   dateText: string;
   timeText: string;
+  /** ISO YYYY-MM-DD anchor date. Absent on events created before this
+   *  change — those fall back to their original free-text dateText only. */
+  date?: string;
+  recurrence?: CalendarRecurrence;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type Goal = {
@@ -825,19 +842,44 @@ export function setMemoryEmbedding(id: string, embedding: number[], model: strin
 // Calendar
 // ============================================================
 
-export function addCalendarEvent(input: string): void {
-  mutateMemory((memory) => {
-    const cleanedInput = cleanCalendarPhrase(input);
+export interface AddCalendarEventInput {
+  title: string;
+  /** ISO YYYY-MM-DD. */
+  date: string;
+  timeText?: string;
+  recurrence?: CalendarRecurrence;
+}
+
+// Action Execution Layer v1 — replaces the old `(input: string): void`
+// signature, which took a raw, un-parsed message and guessed a date from a
+// tiny fixed keyword list (today/tomorrow/weekday names only — nothing
+// resembling a real calendar date like "March 20", and no concept of
+// recurrence at all). That was the concrete root cause of the reported
+// birthday bug: even on the one route that ever called it, this function
+// could not have represented "March 20 every year" no matter what phrasing
+// reached it. Callers now do real parsing (see actionExtractor.ts) BEFORE
+// calling this, so this function's only job is persisting an already-valid
+// structured event and returning it — the same "service functions never
+// parse user text themselves" boundary the rest of this module already
+// keeps for goals/memories.
+export function addCalendarEvent(input: AddCalendarEventInput): CalendarEvent {
+  return mutateMemory((memory) => {
+    const now = new Date().toISOString();
 
     const event: CalendarEvent = {
       id: crypto.randomUUID(),
-      title: cleanedInput,
-      dateText: extractDateText(cleanedInput),
-      timeText: extractTimeText(cleanedInput),
-      createdAt: new Date().toISOString()
+      title: input.title,
+      date: input.date,
+      dateText: formatDateText(input.date, input.recurrence),
+      timeText: input.timeText ?? "time not set",
+      recurrence: input.recurrence,
+      createdAt: now,
+      updatedAt: now,
     };
 
     memory.calendar.push(event);
+
+    return event;
   });
 }
 
@@ -913,36 +955,6 @@ function cleanGoalPhrase(input: string): string {
     .trim();
 }
 
-function cleanCalendarPhrase(input: string): string {
-  return input
-    .replace(/^add calendar event:?\s*/i, "")
-    .replace(/^add event:?\s*/i, "")
-    .replace(/^schedule:?\s*/i, "")
-    .trim();
-}
-
-function extractDateText(input: string): string {
-  const lower = input.toLowerCase();
-
-  if (lower.includes("today")) return "today";
-  if (lower.includes("tomorrow")) return "tomorrow";
-  if (lower.includes("monday")) return "monday";
-  if (lower.includes("tuesday")) return "tuesday";
-  if (lower.includes("wednesday")) return "wednesday";
-  if (lower.includes("thursday")) return "thursday";
-  if (lower.includes("friday")) return "friday";
-  if (lower.includes("saturday")) return "saturday";
-  if (lower.includes("sunday")) return "sunday";
-
-  return "unscheduled";
-}
-
-function extractTimeText(input: string): string {
-  const timeMatch = input.match(/\b\d{1,2}(:\d{2})?\s?(am|pm|AM|PM)\b/);
-
-  return timeMatch ? timeMatch[0] : "time not set";
-}
-
 function addGoal(memory: MemoryData, title: string): void {
   const exists = memory.goals.some(
     (goal) => goal.title.toLowerCase() === title.toLowerCase()
@@ -1008,6 +1020,51 @@ export function deleteGoal(goalId: string): boolean {
     memory.goals = memory.goals.filter((goal) => goal.id !== goalId);
 
     return memory.goals.length !== originalLength;
+  });
+}
+
+// Action Execution Layer v2 (Objective 2/3/4) — atomically makes the
+// ACTIVE (non-completed) goals collection equal to exactly `titles`,
+// through the same mutateMemory() read-mutate-write-atomically path every
+// other mutation in this file uses (never raw JSON manipulation from a
+// caller).
+//
+// Semantics (Objective 3): a completed goal is a historical record — this
+// function never reads, matches against, reactivates, or deletes a
+// completed goal, no matter what titles are requested. Only the active
+// subset is replaced. This mirrors how the rest of the app already treats
+// the active/completed distinction (e.g. RightPanels' CURRENT GOALS card
+// already filters out completed goals before rendering — "active" and
+// "historical" are already meaningfully different lists here, not a new
+// distinction invented for this function).
+//
+// ID stability (Objective 4): a requested title that case-insensitively
+// matches an EXISTING active goal's title keeps that goal's id/createdAt
+// untouched (not identified by array position); a genuinely new title
+// gets a fresh id. An active goal whose title isn't in the new list is
+// dropped — that is the entire point of "replace".
+export function replaceGoals(titles: string[]): Goal[] {
+  return mutateMemory((memory) => {
+    const activeGoals = memory.goals.filter((goal) => !goal.completed);
+    const completedGoals = memory.goals.filter((goal) => goal.completed);
+    const now = new Date().toISOString();
+
+    const nextActive: Goal[] = titles.map((title) => {
+      const existing = activeGoals.find((goal) => goal.title.toLowerCase() === title.toLowerCase());
+
+      return (
+        existing ?? {
+          id: crypto.randomUUID(),
+          title,
+          completed: false,
+          createdAt: now,
+        }
+      );
+    });
+
+    memory.goals = [...completedGoals, ...nextActive];
+
+    return nextActive;
   });
 }
 

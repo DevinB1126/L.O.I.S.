@@ -115,7 +115,7 @@ export function ConversationPanel({
     // workspace / chat transcript), same posture as Memory/Documents above.
     return (
       <section className="conversation-panel conversation-panel--projects">
-        <ProjectsRoot agent={agent} currentAgentLabel={currentAgentLabel} voice={voice} voiceLabel={voiceLabel} />
+        <ProjectsRoot agent={agent} currentAgentLabel={currentAgentLabel} voice={voice} voiceLabel={voiceLabel} memory={memory} />
       </section>
     );
   }

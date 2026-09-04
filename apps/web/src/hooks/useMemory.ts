@@ -7,7 +7,12 @@ import type { MemoryData } from "../types";
 // pile of unrelated props.
 export interface MemoryController {
   memory: MemoryData | null;
-  loadMemory: () => Promise<void>;
+  /** Action Execution Layer v2 (Objective 9) — returns the freshly-fetched
+   *  snapshot (or null on failure) so a caller like useChat's
+   *  post-action refresh can report on what it actually received, rather
+   *  than only being able to fire-and-forget a refresh with no visibility
+   *  into whether it worked. */
+  loadMemory: () => Promise<MemoryData | null>;
   deleteMemory: (id: string) => Promise<void>;
   updateMemory: (id: string, updates: api.UpdateMemoryInput) => Promise<{ success: boolean; error?: string }>;
   deleteCalendarEvent: (eventId: string) => Promise<void>;
@@ -26,8 +31,10 @@ export function useMemory(): MemoryController {
     try {
       const data = await api.getMemory();
       setMemory(data);
+      return data;
     } catch (error) {
       console.error("Failed to load memory:", error);
+      return null;
     }
   }, []);
 
